@@ -56,7 +56,7 @@ app.get("/", (req, res) => {
 
 // Tampilkan halaman login
 app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/login.html"));
+  res.sendFile(path.join(__dirname, "public/login"));
 });
 
 // Proses login
@@ -67,7 +67,7 @@ app.post("/login", authAdmin, (req, res) => {
 
 // Dashboard admin (bisa tampilkan halaman HTML)
 app.get("/admin/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/dashboard.html"));
+  res.sendFile(path.join(__dirname, "public/dashboard"));
 });
 
 // Ambil data order dari Firestore
