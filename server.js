@@ -7,9 +7,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* =======================
-   🔥 FIREBASE INIT
-======================= */
+// =======================
+// 🔥 FIREBASE INIT
+// =======================
 admin.initializeApp({
   credential: admin.credential.cert({
     projectId: process.env.PROJECT_ID,
@@ -20,39 +20,52 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-/* =======================
-   💳 MIDTRANS INIT
-======================= */
-let snap = new midtransClient.Snap({
+// =======================
+// 💳 MIDTRANS INIT
+// =======================
+const snap = new midtransClient.Snap({
   isProduction: false,
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.MIDTRANS_CLIENT_KEY,
 });
 
-/* =======================
-   🛡 ROUTES ADMIN
-======================= */
-
-// Login admin
-app.post("/login", async (req, res) => {
+// =======================
+// 🛡 AUTH MIDDLEWARE
+// =======================
+function authAdmin(req, res, next) {
   const { username, password } = req.body;
 
+  // Simple auth, bisa ganti ke Firebase Auth atau JWT nanti
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    // Bisa tambah token JWT kalau mau
-    return res.json({ success: true, message: "Login berhasil" });
+    next();
   } else {
-    return res.status(401).json({ success: false, message: "Username atau password salah" });
+    res.status(401).json({ error: "Unauthorized" });
   }
+}
+
+// =======================
+// 🔑 ROUTES
+// =======================
+
+// Default root
+app.get("/", (req, res) => {
+  res.json({ message: "🔥 Admin API is running. Use POST /login to authenticate." });
 });
 
-// Ambil data order
-app.get("/admin/orders", async (req, res) => {
+// Login admin
+app.post("/login", authAdmin, (req, res) => {
+  // Bisa return token atau success status
+  res.json({ message: "Login successful" });
+});
+
+// Ambil data order (admin)
+app.get("/admin/orders", authAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection("orders").get();
-    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ success: true, orders });
+    const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(orders);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -60,14 +73,14 @@ app.get("/admin/orders", async (req, res) => {
 app.get("/menu", async (req, res) => {
   try {
     const snapshot = await db.collection("menus").get();
-    const menus = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ success: true, menus });
+    const menus = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(menus);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Contoh route payment
+// Buat transaksi Midtrans
 app.post("/create-transaction", async (req, res) => {
   const { orderId, amount } = req.body;
   try {
@@ -78,15 +91,15 @@ app.post("/create-transaction", async (req, res) => {
       },
     };
     const transaction = await snap.createTransaction(parameter);
-    res.json({ success: true, token: transaction.token });
+    res.json({ token: transaction.token, redirect_url: transaction.redirect_url });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-/* =======================
-   🚀 START SERVER
-======================= */
+// =======================
+// 🚀 START SERVER
+// =======================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Admin API running on port ${PORT}`));
 
