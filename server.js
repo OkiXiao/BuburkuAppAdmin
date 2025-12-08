@@ -2,14 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
 const midtransClient = require("midtrans-client");
-const path = require("path");
-const bodyParser = require("body-parser");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public")); // folder public untuk HTML
 
 /* =======================
    🔥 FIREBASE INIT
@@ -34,50 +30,29 @@ let snap = new midtransClient.Snap({
 });
 
 /* =======================
-   🛡 MIDDLEWARE ADMIN
+   🛡 ROUTES ADMIN
 ======================= */
-function authAdmin(req, res, next) {
+
+// Login admin
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
+
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    next();
+    // Bisa tambah token JWT kalau mau
+    return res.json({ success: true, message: "Login berhasil" });
   } else {
-    res.status(401).send("Unauthorized");
+    return res.status(401).json({ success: false, message: "Username atau password salah" });
   }
-}
-
-/* =======================
-   🔑 ROUTES
-======================= */
-
-// Redirect root ke login
-app.get("/", (req, res) => {
-  res.redirect("/login");
 });
 
-// Tampilkan halaman login
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/login"));
-});
-
-// Proses login
-app.post("/login", authAdmin, (req, res) => {
-  // redirect ke dashboard
-  res.redirect("/admin/dashboard");
-});
-
-// Dashboard admin (bisa tampilkan halaman HTML)
-app.get("/admin/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/dashboard"));
-});
-
-// Ambil data order dari Firestore
+// Ambil data order
 app.get("/admin/orders", async (req, res) => {
   try {
     const snapshot = await db.collection("orders").get();
-    const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    res.json(orders);
+    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json({ success: true, orders });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -85,10 +60,10 @@ app.get("/admin/orders", async (req, res) => {
 app.get("/menu", async (req, res) => {
   try {
     const snapshot = await db.collection("menus").get();
-    const menus = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    res.json(menus);
+    const menus = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json({ success: true, menus });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -103,9 +78,9 @@ app.post("/create-transaction", async (req, res) => {
       },
     };
     const transaction = await snap.createTransaction(parameter);
-    res.json({ token: transaction.token });
+    res.json({ success: true, token: transaction.token });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
