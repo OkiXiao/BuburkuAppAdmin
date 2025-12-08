@@ -1,0 +1,6 @@
+{
+  "/api/menu": "/menu",
+  "/api/orders": "/orders",
+  "/api/admin/orders": "/orders",
+  "/api/create-transaction": "/server"
+}

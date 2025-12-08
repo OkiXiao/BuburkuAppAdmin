@@ -1,0 +1,87 @@
+{
+  "menu": [
+    {
+      "id": "1",
+      "name": "Bubur Ayam Original",
+      "price": 15000,
+      "stock": 20
+    },
+    {
+      "id": "2",
+      "name": "Bubur Ayam Telur",
+      "price": 18000,
+      "stock": 15
+    },
+    {
+      "id": "3",
+      "name": "Cakwe Topping",
+      "price": 5000,
+      "stock": 30
+    }
+  ],
+  "orders": [
+    {
+      "id": "80ac",
+      "customer_name": "Andi",
+      "table_number": 5,
+      "items": [
+        {
+          "menu_id": 1,
+          "quantity": 2
+        }
+      ],
+      "payment_method": "DEBIT"
+    },
+    {
+      "id": "f7ec",
+      "customer_name": "Budi",
+      "table_number": 10,
+      "items": [
+        {
+          "menu_id": 1,
+          "quantity": 2
+        }
+      ],
+      "payment_method": "cash"
+    },
+    {
+      "customer_name": "Budi",
+      "table_number": 12,
+      "items": [
+        {
+          "menu_id": 1,
+          "quantity": 3
+        }
+      ],
+      "payment_method": "cash",
+      "id": "604f"
+    },
+    {
+      "id": "8f6a"
+    },
+    {
+      "id": "2e76",
+      "customer_name": "Sinta",
+      "table_number": 3,
+      "items": [
+        {
+          "menu_id": 2,
+          "quantity": 1
+        }
+      ],
+      "payment_method": "cash"
+    },
+    {
+      "customer_name": "Sinta",
+      "table_number": 3,
+      "items": [
+        {
+          "menu_id": 2,
+          "quantity": 1
+        }
+      ],
+      "payment_method": "cash",
+      "id": "L3NzyYy"
+    }
+  ]
+}
