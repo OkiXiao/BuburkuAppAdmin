@@ -8,36 +8,31 @@ app.use(cors());
 app.use(express.json());
 
 /* =======================
-   🔥 FIREBASE INIT (NO JSON)
+   🔥 FIREBASE INIT (SAFE)
 ========================== */
-admin.initializeApp({
-  credential: admin.credential.cert({
-    type: process.env.TYPE,
-    project_id: process.env.PROJECT_ID,
-    private_key_id: process.env.PRIVATE_KEY_ID,
-    private_key: process.env.PRIVATE_KEY.replace(/\\n/g, "\n"),
-    client_email: process.env.CLIENT_EMAIL,
-    client_id: process.env.CLIENT_ID,
-    auth_uri: process.env.AUTH_URI,
-    token_uri: process.env.TOKEN_URI,
-    auth_provider_x509_cert_url: process.env.AUTH_PROVIDER,
-    client_x509_cert_url: process.env.CLIENT_CERT_URL,
-  }),
-});
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.PROJECT_ID,
+      clientEmail: process.env.CLIENT_EMAIL,
+      privateKey: process.env.PRIVATE_KEY.replace(/\\n/g, "\n"),
+    }),
+  });
+}
 
 const db = admin.firestore();
 
 /* =======================
    💳 MIDTRANS INIT
 ========================== */
-let snap = new midtransClient.Snap({
-  isProduction: false, // set true jika sudah live
+const snap = new midtransClient.Snap({
+  isProduction: false,
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.MIDTRANS_CLIENT_KEY,
 });
 
 /* =======================
-   🌟 ROUTE CONTOH GET DATA
+   🌟 GET MENU
 ========================== */
 app.get("/menu", async (req, res) => {
   try {
@@ -50,12 +45,12 @@ app.get("/menu", async (req, res) => {
 });
 
 /* =======================
-   💰 ROUTE CONTOH PAYMENT
+   💰 CREATE TRANSACTION
 ========================== */
 app.post("/create-transaction", async (req, res) => {
   const { orderId, amount } = req.body;
   try {
-    let parameter = {
+    const parameter = {
       transaction_details: {
         order_id: orderId,
         gross_amount: amount,
