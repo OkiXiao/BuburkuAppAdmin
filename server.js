@@ -30,13 +30,15 @@ const snap = new midtransClient.Snap({
 });
 
 // =======================
-// 🛡 AUTH MIDDLEWARE
+// 🛡 SIMPLE TOKEN AUTH
 // =======================
-function authAdmin(req, res, next) {
-  const { username, password } = req.body;
+// Token statis untuk demo
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "secret-admin-token";
 
-  // Simple auth, bisa ganti ke Firebase Auth atau JWT nanti
-  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+// Middleware cek token
+function authToken(req, res, next) {
+  const token = req.headers['authorization'];
+  if (token === `Bearer ${ADMIN_TOKEN}`) {
     next();
   } else {
     res.status(401).json({ error: "Unauthorized" });
@@ -52,14 +54,18 @@ app.get("/", (req, res) => {
   res.json({ message: "🔥 Admin API is running. Use POST /login to authenticate." });
 });
 
-// Login admin
-app.post("/login", authAdmin, (req, res) => {
-  // Bisa return token atau success status
-  res.json({ message: "Login successful" });
+// Login admin → kembalikan token
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+    res.json({ token: ADMIN_TOKEN, message: "Login successful" });
+  } else {
+    res.status(401).json({ error: "Unauthorized" });
+  }
 });
 
-// Ambil data order (admin)
-app.get("/admin/orders", authAdmin, async (req, res) => {
+// Ambil data order (admin) → harus pakai token
+app.get("/admin/orders", authToken, async (req, res) => {
   try {
     const snapshot = await db.collection("orders").get();
     const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
