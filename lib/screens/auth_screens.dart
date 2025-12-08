@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import 'dashboard_screen.dart';
 
 // ====================================================================
 // LOGIN PAGE
 // ====================================================================
-
 class LoginScreenBuburKu extends StatefulWidget {
   const LoginScreenBuburKu({super.key});
 
@@ -20,6 +19,8 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  final String apiUrl = "http://YOUR_SERVER_IP:3000/login"; // ganti sesuai alamat server
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -27,7 +28,7 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
     super.dispose();
   }
 
-  // LOGIN MENGGUNAKAN FIRESTORE + AUTH
+  // LOGIN MENGGUNAKAN HTTP POST KE SERVER
   void _performLogin() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
@@ -39,57 +40,35 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Cari admin berdasarkan username di Firestore
-      final query = await FirebaseFirestore.instance
-          .collection('admin')
-          .where('username', isEqualTo: username)
-          .limit(1)
-          .get();
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      );
 
-      if (query.docs.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Username tidak ditemukan')),
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // Login sukses
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
-        return;
+      } else {
+        // Login gagal
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['error'] ?? 'Login gagal')),
+        );
       }
-
-      final adminData = query.docs.first.data();
-      final email = adminData['email'];
-
-      // Login menggunakan Firebase Auth
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Jika sukses masuk ke dashboard
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login gagal: ${e.message}')),
-      );
     } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login gagal: ${e.toString()}')),
+        SnackBar(content: Text('Login gagal: $e')),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -176,134 +155,8 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
                         ),
                 ),
               ),
-              const SizedBox(height: 12),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ForgotPasswordScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Lupa Password?',
-                  style: TextStyle(color: Colors.black54),
-                ),
-              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ====================================================================
-// FORGOT PASSWORD PAGE
-// ====================================================================
-
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
-
-  @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
-}
-
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final TextEditingController _emailController = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  // Kirim link reset password ke email
-  void _sendResetPassword() async {
-    final email = _emailController.text.trim();
-
-    if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan email yang valid')),
-      );
-      return;
-    }
-
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Link reset password dikirim ke $email'),
-          backgroundColor: Colors.green.shade700,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengirim email: $e')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lupa Password'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Masukkan email Anda untuk menerima tautan reset password.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: const Icon(Icons.email_outlined),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            ElevatedButton(
-              onPressed: _sendResetPassword,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'KIRIM LINK RESET PASSWORD',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
-          ],
         ),
       ),
     );
