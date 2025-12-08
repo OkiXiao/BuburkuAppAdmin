@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "390200307747",
+    "project_id": "buburku-4a056",
+    "storage_bucket": "buburku-4a056.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:390200307747:android:3ad2998f2e12334a634196",
+        "android_client_info": {
+          "package_name": "com.example.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCaZ4Lt-GJNA6FGsVTCQVEG7ftcpgwNDSY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:390200307747:android:8587d7d76e86abfb634196",
+        "android_client_info": {
+          "package_name": "com.example.buburku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCaZ4Lt-GJNA6FGsVTCQVEG7ftcpgwNDSY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
