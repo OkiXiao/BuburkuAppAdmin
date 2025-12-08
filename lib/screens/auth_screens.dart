@@ -18,6 +18,14 @@ class LoginScreenBuburKu extends StatefulWidget {
 class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   // LOGIN MENGGUNAKAN FIRESTORE + AUTH
   void _performLogin() async {
@@ -31,6 +39,10 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       // Cari admin berdasarkan username di Firestore
       final query = await FirebaseFirestore.instance
@@ -40,6 +52,7 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
           .get();
 
       if (query.docs.isEmpty) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Username tidak ditemukan')),
         );
@@ -56,14 +69,27 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
       );
 
       // Jika sukses masuk ke dashboard
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login gagal: ${e.message}')),
+      );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login gagal: ${e.toString()}')),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -129,21 +155,25 @@ class _LoginScreenBuburKuState extends State<LoginScreenBuburKu> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _performLogin,
+                  onPressed: _isLoading ? null : _performLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    'LOGIN',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text(
+                          'LOGIN',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -184,6 +214,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
   // Kirim link reset password ke email
   void _sendResetPassword() async {
     final email = _emailController.text.trim();
@@ -198,6 +234,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Link reset password dikirim ke $email'),
@@ -205,6 +242,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal mengirim email: $e')),
       );
